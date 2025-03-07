@@ -7,6 +7,7 @@ import chuchu.miniproject.domain.worker.Worker;
 import chuchu.miniproject.dto.worker.request.RequestGoWorker;
 import chuchu.miniproject.dto.worker.request.RequestLeaveWorker;
 import chuchu.miniproject.dto.worker.request.RequestSaveWorker;
+import chuchu.miniproject.dto.worker.request.RequestUsingDayOff;
 import chuchu.miniproject.dto.worker.response.ResponseGetWorkList;
 import chuchu.miniproject.dto.worker.response.ResponseGetWorker;
 import chuchu.miniproject.dto.worker.response.ResponseListGetWorkList;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Year;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,6 +71,7 @@ public class WorkerService {
             throw new IllegalArgumentException("유효한 입사일을 입력해주세요");
         }
 
+        Integer dayOff = Year.now().equals(Year.from(workStartDate)) ? 11 : 15;
 
 
         Worker worker = Worker.builder()
@@ -78,6 +81,7 @@ public class WorkerService {
                 .birthday(requestSaveWorker.getBirthday())
                 .workStartDate(requestSaveWorker.getWorkStartDate())
                 .team(team)
+                .dayOff(dayOff)
                 .build();
 
         team.addWorker(worker);
@@ -111,7 +115,7 @@ public class WorkerService {
 
 
 
-            if(workDate == null){
+        if(workDate == null){
             throw new IllegalArgumentException("유효한 날짜를 입력해주세요.");
         }
 
@@ -136,7 +140,7 @@ public class WorkerService {
                 .goTime(goTime)
                 .build();
 
-        currentWorker.goWork(workList);
+        workListRepository.save(workList);
 
     }
 
@@ -177,13 +181,35 @@ public class WorkerService {
         Long sum = workLists.stream().mapToLong(WorkList::getWorkingMinutes).sum();
 
         List <ResponseListGetWorkList> responseListGetWorkLists = workLists.stream()
-                .map(workList -> new ResponseListGetWorkList(workList.getWorkDate(), workList.getWorkingMinutes()))
+                .map(workList -> new ResponseListGetWorkList(workList.getWorkDate(), workList.getWorkingMinutes(), false))
                 .toList();
 
 
         return new ResponseGetWorkList(responseListGetWorkLists, sum);
 
 
+    }
+
+    public void usingDayOff(RequestUsingDayOff requestUsingDayOff){
+        Worker currentWorker = workerRepository.findById(requestUsingDayOff.workerId())
+                .orElseThrow(()->new EntityNotFoundException("존재하지 않는 직원입니다."));
+
+        LocalDate dayOffDay = requestUsingDayOff.dayOffDay();
+
+        if(dayOffDay == null || LocalDate.now().isBefore(requestUsingDayOff.dayOffDay()))
+            throw new IllegalArgumentException("유효한 연차일을 입력해주세요.");
+
+        if(currentWorker.getDayOff() <= 0)
+            throw new IllegalArgumentException("사용할 수 있는 연차가 존재하지 않습니다.");
+
+        WorkList workList = WorkList.builder()
+                .workingMinutes(0L)
+                .workDate(dayOffDay)
+                .usingDayOff(true)
+                .build();
+
+        currentWorker.useDayOff();
+        workListRepository.save(workList);
     }
 
 }

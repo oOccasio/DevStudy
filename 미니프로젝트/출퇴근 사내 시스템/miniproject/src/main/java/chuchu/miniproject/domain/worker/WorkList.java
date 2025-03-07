@@ -35,14 +35,18 @@ public class WorkList {
     @JoinColumn(name = "worker_id")
     private Worker worker;
 
+    @Column
+    private boolean usingDayOff;
 
     @Builder
-    public WorkList(LocalDate workDate, Long workingMinutes, Worker worker, LocalTime goTime, LocalTime endTime) {
+    public WorkList(LocalDate workDate, Long workingMinutes, Worker worker,
+                    LocalTime goTime, LocalTime endTime, boolean usingDayOff) {
         this.workDate = workDate;
         this.workingMinutes = workingMinutes;
         this.worker = worker;
         this.goTime = goTime;
         this.endTime = endTime;
+        this.usingDayOff = usingDayOff;
     }
 
 

@@ -5,7 +5,9 @@ import java.time.LocalDate;
 public record ResponseListGetWorkList(
         LocalDate date,
 
-        Long workingMinute
+        Long workingMinute,
+
+        boolean usingDayOff
 
 ) {
 }

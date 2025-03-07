@@ -3,6 +3,7 @@ package chuchu.miniproject.controller.worker;
 import chuchu.miniproject.dto.worker.request.RequestGoWorker;
 import chuchu.miniproject.dto.worker.request.RequestLeaveWorker;
 import chuchu.miniproject.dto.worker.request.RequestSaveWorker;
+import chuchu.miniproject.dto.worker.request.RequestUsingDayOff;
 import chuchu.miniproject.dto.worker.response.ResponseGetWorkList;
 import chuchu.miniproject.dto.worker.response.ResponseGetWorker;
 import chuchu.miniproject.service.worker.WorkerService;
@@ -50,6 +51,12 @@ public class WorkerController {
 
         return workerService.getWorkList(workerId, yearMonth);
 
+    }
+
+    @PostMapping
+    public void usingDayOff(@RequestBody RequestUsingDayOff requestUsingDayOff) {
+
+        workerService.usingDayOff(requestUsingDayOff);
     }
 
 }

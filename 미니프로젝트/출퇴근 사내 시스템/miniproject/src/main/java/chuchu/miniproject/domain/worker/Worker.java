@@ -40,25 +40,24 @@ public class Worker {
     @JoinColumn(name = "team_id")
     private Team team;
 
-    @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL)
-    private final List<WorkList> workLists = new ArrayList<>();
+    @Column
+    private Integer dayOff;
 
     @Builder
     public Worker(String name, String teamName, Role role, LocalDate birthday,
-                  LocalDate workStartDate, Team team) {
+                  LocalDate workStartDate, Team team, Integer dayOff) {
         this.name = name;
         this.teamName = teamName;
         this.role = role;
         this.birthday = birthday;
         this.workStartDate = workStartDate;
         this.team = team;
+        this.dayOff = dayOff;
     }
 
-    public void goWork (WorkList workList)
-    {
 
-        this.workLists.add(workList);
-
+    public void useDayOff (){
+        this.dayOff--;
     }
 
 
