@@ -1,9 +1,9 @@
 package chuchuchi.chuchuchi.domain.member;
 
-import chuchuchi.chuchuchi.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import chuchuchi.chuchuchi.domain.BaseTimeEntity;
 
 @Table(name = "MEMBER")
 @Getter
