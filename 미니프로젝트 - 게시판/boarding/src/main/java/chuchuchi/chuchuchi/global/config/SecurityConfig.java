@@ -1,6 +1,9 @@
 package chuchuchi.chuchuchi.global.config;
 
+import chuchuchi.chuchuchi.domain.member.service.LoginService;
 import chuchuchi.chuchuchi.global.login.filter.JsonUsernamePasswordAuthenticationFilter;
+import chuchuchi.chuchuchi.global.login.handler.LoginFailureHandler;
+import chuchuchi.chuchuchi.global.login.handler.LoginSuccessJWTProvideHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final LoginService loginService;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -47,14 +51,34 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setPasswordEncoder(passwordEncoder());
-
+        provider.setUserDetailsService(loginService);
         return new ProviderManager(provider);
     }
 
     @Bean
+    public LoginSuccessJWTProvideHandler loginSuccessJWTProvideHandler() {
+        return new LoginSuccessJWTProvideHandler();
+    }
+
+    @Bean
+    public LoginFailureHandler loginFailureHandler(){
+        return new LoginFailureHandler();
+    }
+
+    @Bean
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter() {
-        JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter = new JsonUsernamePasswordAuthenticationFilter(objectMapper);
-        jsonUsernamePasswordAuthenticationFilter.setAuthenticationManager(authenticationManager());
+
+        JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter =
+                new JsonUsernamePasswordAuthenticationFilter(objectMapper);
+
+        jsonUsernamePasswordAuthenticationFilter
+                .setAuthenticationManager(authenticationManager());
+
+        jsonUsernamePasswordAuthenticationFilter
+                .setAuthenticationSuccessHandler(loginSuccessJWTProvideHandler());
+
+        jsonUsernamePasswordAuthenticationFilter
+                .setAuthenticationFailureHandler(loginFailureHandler());
 
         return jsonUsernamePasswordAuthenticationFilter;
     }
