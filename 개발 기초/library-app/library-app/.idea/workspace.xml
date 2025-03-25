@@ -18,8 +18,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="Interface" />
+        <option value="Class" />
+        <option value="Enum" />
       </list>
     </option>
   </component>
@@ -45,7 +46,7 @@
     &quot;Spring Boot.LibraryAppApplication.executor&quot;: &quot;Run&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/wpsxk/OneDrive/바탕 화면/Study/개발 기초/library-app/library-app&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/wpsxk/OneDrive/바탕 화면/개발/개발 기초/library-app/library-app&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -123,6 +124,8 @@
       <workItem from="1741193188919" duration="691000" />
       <workItem from="1741219667208" duration="30000" />
       <workItem from="1741220322943" duration="250000" />
+      <workItem from="1742815150354" duration="705000" />
+      <workItem from="1742885046352" duration="13000" />
     </task>
     <servers />
   </component>
