@@ -1,0 +1,11 @@
+jwt:
+  secret: YmFzZTY066GcIOyduOy9lOuUqeuQnCDslZTtmLgg7YKkLCBIUzUxMuulvCDsgqzsmqntlaAg6rKD7J206riwIOuVjOusuOyXkA==
+
+  access:
+    expiration: 80
+    header: Authorization
+
+  refresh:
+    expiration: 80
+    header: Authorization-refresh
+

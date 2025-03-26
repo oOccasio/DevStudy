@@ -38,6 +38,17 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(length = 1000)
+    private String refreshToken; //RefreshToken
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void destoryRefreshToken() {
+        this.refreshToken = null;
+    }
+
     public void updatePassword(PasswordEncoder passwordEncoder, String password) {
         this.password = passwordEncoder.encode(password);
     }
@@ -49,6 +60,7 @@ public class Member extends BaseTimeEntity {
     public void updateNickName(String nickName){
         this.nickName = nickName;
     }
+
     public void updateAge(Integer age){
         this.age = age;
     }
