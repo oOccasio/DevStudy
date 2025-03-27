@@ -110,6 +110,29 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    public void sendAccessAndRefreshToken(HttpServletResponse response, String accessToken, String refreshToken) {
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        setAccessTokenHeader(response, accessToken);
+        setRefreshTokenHeader(response, refreshToken);
+
+        Map<String, String> tokenMap = new HashMap<>();
+        tokenMap.put(ACCESS_TOKEN_SUBJECT, accessToken);
+        tokenMap.put(REFRESH_TOKEN_SUBJECT, refreshToken);
+
+    }
+
+    @Override
+    public void sendAccessToken(HttpServletResponse response, String accessToken) {
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        setAccessTokenHeader(response, accessToken);
+
+        Map<String, String> tokenMap = new HashMap<>();
+        tokenMap.put(ACCESS_TOKEN_SUBJECT, accessToken);
+    }
+
+    @Override
     public String extractAccessToken(HttpServletRequest request) throws IOException, ServletException {
         return Optional.ofNullable(request.getHeader(accessHeader))
                 .map(accessToken -> accessToken.replace(BEARER, "")).orElse(null);
