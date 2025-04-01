@@ -1,7 +1,10 @@
 package chuchuchi.chuchuchi.global.config;
 
+import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
 import chuchuchi.chuchuchi.domain.member.service.LoginService;
+import chuchuchi.chuchuchi.global.jwt.JwtService;
 import chuchuchi.chuchuchi.global.login.filter.JsonUsernamePasswordAuthenticationFilter;
+import chuchuchi.chuchuchi.global.jwt.filter.JwtAuthenticationProcessingFilter;
 import chuchuchi.chuchuchi.global.login.handler.LoginFailureHandler;
 import chuchuchi.chuchuchi.global.login.handler.LoginSuccessJWTProvideHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +20,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +29,8 @@ public class SecurityConfig {
 
     private final LoginService loginService;
     private final ObjectMapper objectMapper;
+    private final MemberRepository memberRepository;
+    private final JwtService jwtService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,6 +44,8 @@ public class SecurityConfig {
                 .formLogin(login-> login.disable())
                 .httpBasic(basic -> basic.disable());
 
+        http.addFilterAfter(jsonUsernamePasswordLoginFilter(), LogoutFilter.class);
+        http.addFilterBefore(jwtAuthenticationProcessingFilter(), JsonUsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -57,7 +64,7 @@ public class SecurityConfig {
 
     @Bean
     public LoginSuccessJWTProvideHandler loginSuccessJWTProvideHandler() {
-        return new LoginSuccessJWTProvideHandler();
+        return new LoginSuccessJWTProvideHandler(jwtService, memberRepository);
     }
 
     @Bean
@@ -66,21 +73,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter() {
+    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordLoginFilter() {
 
-        JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter =
+        JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordLoginFilter =
                 new JsonUsernamePasswordAuthenticationFilter(objectMapper);
 
-        jsonUsernamePasswordAuthenticationFilter
-                .setAuthenticationManager(authenticationManager());
+        jsonUsernamePasswordLoginFilter.setAuthenticationManager(authenticationManager());
 
-        jsonUsernamePasswordAuthenticationFilter
-                .setAuthenticationSuccessHandler(loginSuccessJWTProvideHandler());
+        jsonUsernamePasswordLoginFilter.setAuthenticationSuccessHandler(loginSuccessJWTProvideHandler());
 
-        jsonUsernamePasswordAuthenticationFilter
-                .setAuthenticationFailureHandler(loginFailureHandler());
+        jsonUsernamePasswordLoginFilter.setAuthenticationFailureHandler(loginFailureHandler());
 
-        return jsonUsernamePasswordAuthenticationFilter;
+        return jsonUsernamePasswordLoginFilter;
     }
 
+    @Bean
+    public JwtAuthenticationProcessingFilter jwtAuthenticationProcessingFilter(){
+
+        JwtAuthenticationProcessingFilter jsonUsernamePasswordLoginFilter = new JwtAuthenticationProcessingFilter(jwtService, memberRepository);
+
+        return jsonUsernamePasswordLoginFilter;
+    }
 }

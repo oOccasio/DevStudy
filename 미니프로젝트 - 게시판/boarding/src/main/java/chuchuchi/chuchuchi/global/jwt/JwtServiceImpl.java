@@ -4,7 +4,6 @@ import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +48,7 @@ public class JwtServiceImpl implements JwtService {
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
     private static final String USERNAME_CLAIM = "username";
-    private static final String BEARER = "Bearer";
+    private static final String BEARER = "Bearer ";
 
     private final MemberRepository memberRepository;
     private final ObjectMapper objectMapper;
