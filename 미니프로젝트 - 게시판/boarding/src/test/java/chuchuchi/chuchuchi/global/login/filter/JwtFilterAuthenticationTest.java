@@ -67,7 +67,7 @@ public class JwtFilterAuthenticationTest {
     private static String LOGIN_RUL = "/login";
 
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
-    private static final String BEARER = "Bearer";
+    private static final String BEARER = "Bearer ";
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -134,7 +134,7 @@ public class JwtFilterAuthenticationTest {
         //when,then
         mockMvc.perform(MockMvcRequestBuilders
                         .get(LOGIN_RUL+"123").header(accessHeader, BEARER + accessToken))
-                        .andExpect(status().isForbidden());
+                        .andExpect(status().isNotFound());
     }
 
     @Test
@@ -245,7 +245,7 @@ public class JwtFilterAuthenticationTest {
         MvcResult result = mockMvc.perform(get(LOGIN_RUL + "123")
                 .header(refreshHeader, BEARER + refreshToken + 1)
                 .header(accessHeader, BEARER + accessToken))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isNotFound())
                 .andReturn();
 
         String responseAccessToken = result.getResponse().getHeader(accessHeader);
