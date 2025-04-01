@@ -1,9 +1,14 @@
 package chuchuchi.chuchuchi.domain.member;
 
+import chuchuchi.chuchuchi.domain.comment.Comment;
+import chuchuchi.chuchuchi.domain.post.Post;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import chuchuchi.chuchuchi.domain.BaseTimeEntity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Table(name = "MEMBER")
 @Getter
@@ -41,6 +46,27 @@ public class Member extends BaseTimeEntity {
     @Column(length = 1000)
     private String refreshToken; //RefreshToken
 
+    @OneToMany(mappedBy = "writer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> postList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "writer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> commentList = new ArrayList<>();
+
+
+
+
+    // == 연관관계 메서드 == //
+    public void addPost(Post post) {
+        postList.add(post);
+    }
+
+    public void addComment(Comment comment) {
+        commentList.add(comment);
+    }
+
+
+    //== refresh 토큰 관련 메서드 == //
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
@@ -48,6 +74,10 @@ public class Member extends BaseTimeEntity {
     public void destoryRefreshToken() {
         this.refreshToken = null;
     }
+
+
+
+    // ==  update 관련 메서드 == //
 
     public void updatePassword(PasswordEncoder passwordEncoder, String password) {
         this.password = passwordEncoder.encode(password);
