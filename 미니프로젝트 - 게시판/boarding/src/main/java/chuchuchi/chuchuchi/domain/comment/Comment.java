@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -90,6 +91,36 @@ public class Comment extends BaseTimeEntity {
         this.parent = parent;
         this.content = content;
         this.isRemoved = false;
+    }
+
+
+    public List<Comment> findRemovableList(){
+
+        List<Comment> result = new ArrayList<>();
+
+        Optional.ofNullable(this.parent).ifPresentOrElse(
+
+                parentComment -> {
+                    if(parentComment.isRemoved() && parentComment.isAllChildRemoved()) {
+                        result.addAll(parentComment.getChildList());
+                        result.add(parentComment);
+                    }
+                },
+                () -> {
+                    if(isAllChildRemoved()){
+                        result.add(this);
+                        result.addAll(this.getChildList());
+                    }
+                }
+        );
+
+        return result;
+    }
+
+    public boolean isAllChildRemoved(){
+
+        return getChildList().stream().allMatch(comment -> comment.isRemoved);
+
     }
 
 }
