@@ -95,7 +95,7 @@ public class Member extends BaseTimeEntity {
         this.age = age;
     }
 
-    //password 암호화
+    // == password 암호화 == //
     public void encodePassword(PasswordEncoder passwordEncoder) {
         this.password = passwordEncoder.encode(this.password);
     }

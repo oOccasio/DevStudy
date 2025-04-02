@@ -5,6 +5,7 @@ import chuchuchi.chuchuchi.domain.member.Member;
 import chuchuchi.chuchuchi.domain.post.Post;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,6 +35,7 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
+    @Lob
     @Column(nullable = false)
     private String content;
 
@@ -81,5 +83,13 @@ public class Comment extends BaseTimeEntity {
     }
 
 
+    @Builder
+    public Comment( Member writer, Post post, Comment parent, String content){
+        this.writer = writer;
+        this.post = post;
+        this.parent = parent;
+        this.content = content;
+        this.isRemoved = false;
+    }
 
 }

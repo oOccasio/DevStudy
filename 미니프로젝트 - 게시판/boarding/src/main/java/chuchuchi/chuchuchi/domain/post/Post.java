@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,16 +26,18 @@ public class Post extends BaseTimeEntity {
     @JoinColumn(name = "writer_id")
     private Member writer;
 
-    @Column
+    @Column(length = 40, nullable = false)
     private String title;
 
-    @Column
+    @Lob
+    @Column(nullable = false)
     private String content;
 
-    @Column
+    @Column(nullable = false)
     private String file_path;
 
 
+    //== 게시글을 삭제하면 달려있는 댓글 모두 삭제 == //
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> commentList = new ArrayList <> ();
 
