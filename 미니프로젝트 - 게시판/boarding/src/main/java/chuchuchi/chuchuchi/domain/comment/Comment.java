@@ -98,21 +98,19 @@ public class Comment extends BaseTimeEntity {
 
         List<Comment> result = new ArrayList<>();
 
-        Optional.ofNullable(this.parent).ifPresentOrElse(
+        boolean removableByParent = hasParent() && isAllChildRemoved() && parent.isRemoved;
 
-                parentComment -> {
-                    if(parentComment.isRemoved() && parentComment.isAllChildRemoved()) {
-                        result.addAll(parentComment.getChildList());
-                        result.add(parentComment);
-                    }
-                },
-                () -> {
-                    if(isAllChildRemoved()){
-                        result.add(this);
-                        result.addAll(this.getChildList());
-                    }
-                }
-        );
+        boolean removableBySelf = !hasParent() && isAllChildRemoved();
+
+        if(removableByParent){
+            result.addAll(parent.childList);
+            result.add(parent);
+        }
+
+        if(removableBySelf){
+            result.addAll(this.childList);
+            result.add(this);
+        }
 
         return result;
     }
@@ -121,6 +119,10 @@ public class Comment extends BaseTimeEntity {
 
         return getChildList().stream().allMatch(comment -> comment.isRemoved);
 
+    }
+
+    public boolean hasParent(){
+        return this.parent != null;
     }
 
 }

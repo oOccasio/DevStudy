@@ -2,7 +2,6 @@ package chuchuchi.chuchuchi.domain.comment.service;
 
 import chuchuchi.chuchuchi.domain.comment.Comment;
 import chuchuchi.chuchuchi.domain.comment.repository.CommentRepository;
-import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
