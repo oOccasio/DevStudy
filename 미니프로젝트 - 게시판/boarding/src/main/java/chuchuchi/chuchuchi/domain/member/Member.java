@@ -100,5 +100,12 @@ public class Member extends BaseTimeEntity {
         this.password = passwordEncoder.encode(this.password);
     }
 
+    //== 비밀번호 변경, 회원탈퇴 시 비밀번호를 확인하고 비밀번호의 일치 여부 판단하기
+    public boolean matchPassword(PasswordEncoder passwordEncoder, String checkPassword) {
+        return passwordEncoder.matches(checkPassword, getPassword());
+    }
 
+    public void addUserAuthority(){
+        this.role = Role.USER;
+    }
 }
