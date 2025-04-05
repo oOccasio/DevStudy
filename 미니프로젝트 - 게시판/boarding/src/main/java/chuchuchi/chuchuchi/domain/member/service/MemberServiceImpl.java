@@ -26,7 +26,7 @@ public class MemberServiceImpl implements MemberService {
         member.addUserAuthority();
         member.encodePassword(passwordEncoder);
 
-        if(memberRepository.findByUsername(memberSignUpDto.name()).isPresent()){
+        if(memberRepository.findByUsername(memberSignUpDto.username()).isPresent()){
             throw new Exception("이미 존재하는 아이디입니다.");
         }
 
