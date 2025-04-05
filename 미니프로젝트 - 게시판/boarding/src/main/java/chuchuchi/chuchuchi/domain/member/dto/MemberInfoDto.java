@@ -3,13 +3,16 @@ package chuchuchi.chuchuchi.domain.member.dto;
 import chuchuchi.chuchuchi.domain.member.Member;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class MemberInfoDto {
-    private final String name;
-    private final String nickname;
-    private final String username;
-    private final Integer age;
+
+    private String name;
+    private String nickname;
+    private String username;
+    private Integer age;
 
     @Builder
     public MemberInfoDto(Member member) {
