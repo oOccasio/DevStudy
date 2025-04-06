@@ -5,6 +5,8 @@ import chuchuchi.chuchuchi.domain.member.Role;
 import chuchuchi.chuchuchi.domain.member.dto.MemberInfoDto;
 import chuchuchi.chuchuchi.domain.member.dto.MemberSignUpDto;
 import chuchuchi.chuchuchi.domain.member.dto.MemberUpdateDto;
+import chuchuchi.chuchuchi.domain.member.exception.MemberException;
+import chuchuchi.chuchuchi.domain.member.exception.MemberExceptionType;
 import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -86,7 +88,7 @@ public class MemberServiceTest {
 
         //then
         Member member = memberRepository.findByUsername(memberSignUpDto.username())
-                .orElseThrow(() -> new Exception("회원이 없습니다."));
+                .orElseThrow(() -> new MemberException(MemberExceptionType.NOT_FOUND_MEMBER));
         assertThat(member.getId()).isNotNull();
         assertThat(member.getUsername()).isEqualTo(memberSignUpDto.username());
         assertThat(member.getName()).isEqualTo(memberSignUpDto.name());
@@ -103,9 +105,9 @@ public class MemberServiceTest {
         memberService.signUp(memberSignUpDto);
         clear();
         //when, then
-        assertThat(assertThrows(Exception.class, () -> memberService.signUp(memberSignUpDto)).getMessage())
-                .isEqualTo("이미 존재하는 아이디입니다.");
-    }
+        assertThat(assertThrows(MemberException.class, () -> memberService.signUp(memberSignUpDto))
+                .getBaseExceptionType()).isEqualTo(MemberExceptionType.ALREADY_EXIST_USERNAME);
+}
 
     @Test
     public void singUpFailForEmptyFields() throws Exception {
@@ -236,8 +238,8 @@ public class MemberServiceTest {
         MemberSignUpDto memberSignUpDto = setMember();
 
         //when
-        assertThat(assertThrows(Exception.class, () -> memberService.withdraw(PASSWORD+"123")).getMessage())
-                .isEqualTo("비밀번호가 일치하지 않습니다.");
+        assertThat(assertThrows(MemberException.class, () -> memberService.withdraw(PASSWORD+"123"))
+                .getBaseExceptionType()).isEqualTo(MemberExceptionType.WRONG_PASSWORD);
     }
 
     @Test

@@ -2,6 +2,7 @@ package chuchuchi.chuchuchi.domain.member.controller;
 
 import chuchuchi.chuchuchi.domain.member.Member;
 import chuchuchi.chuchuchi.domain.member.dto.MemberSignUpDto;
+import chuchuchi.chuchuchi.domain.member.exception.MemberExceptionType;
 import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
 import chuchuchi.chuchuchi.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -413,8 +414,8 @@ public class MemberControllerTest {
 
 
         //then
-        assertThat(result.getResponse().getContentAsString()).isEqualTo("");
-
+        Map<String, Integer> map = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+        assertThat(map.get("errorCode")).isEqualTo(MemberExceptionType.NOT_FOUND_MEMBER.getErrorCode());
     }
 
     @Test
