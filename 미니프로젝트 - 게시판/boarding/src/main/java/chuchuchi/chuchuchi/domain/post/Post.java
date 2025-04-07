@@ -5,8 +5,10 @@ import chuchuchi.chuchuchi.domain.comment.Comment;
 import chuchuchi.chuchuchi.domain.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,9 +39,16 @@ public class Post extends BaseTimeEntity {
     private String file_path;
 
 
+    @Builder
+    public Post(String title, String content){
+        this.title = title;
+        this.content = content;
+    }
+
     //== 게시글을 삭제하면 달려있는 댓글 모두 삭제 == //
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> commentList = new ArrayList <> ();
+
 
 
 

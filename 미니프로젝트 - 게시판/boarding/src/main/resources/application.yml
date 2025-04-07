@@ -15,4 +15,6 @@ spring:
   profiles:
     include: jwt
 
+file:
+  dir: C:\files\
 
