@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -22,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,6 +44,12 @@ public class LoginTest {
     @Autowired
     EntityManager em;
 
+    @Value("${jwt.access.header}")
+    private String accessHeader;
+    @Value("${jwt.refresh.header")
+    private String refreshHeader;
+
+
     PasswordEncoder delegatingPasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     ObjectMapper objectMapper = new ObjectMapper();
@@ -51,6 +60,7 @@ public class LoginTest {
     private static String PASSWORD = "password";
 
     private static String LOGIN_RUL = "/login";
+    private static String LOGIN_FAIL_MESSAGE = "fail";
 
     private void clear (){
         em.flush();
@@ -106,13 +116,22 @@ public class LoginTest {
     @Test
     public void login_fail_id() throws Exception {
         //given
-        Map<String, String> map = getUsernamePasswordMap(USERNAME+"123", PASSWORD);
+        Map<String, String> map = new HashMap<>();
+        map.put("username", USERNAME+"123");
+        map.put("password", PASSWORD);
 
-        //when, then
-        MvcResult result = perform(LOGIN_RUL, APPLICATION_JSON, map)
+        //when
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .post(LOGIN_RUL)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(map)))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andReturn();
+
+        //then
+        assertThat(result.getResponse().getHeader(accessHeader)).isNull();
+        assertThat(result.getResponse().getHeader(refreshHeader)).isNull();
 
     }
 
@@ -120,13 +139,22 @@ public class LoginTest {
     public void login_fail_password() throws Exception {
 
         //given
-        Map<String, String> map = getUsernamePasswordMap(USERNAME, PASSWORD + "123");
+        Map<String, String> map = new HashMap<>();
+        map.put("username", USERNAME);
+        map.put("password", PASSWORD + "123");
 
-        //when, then
-        MvcResult result = perform(LOGIN_RUL, APPLICATION_JSON, map)
+        //when
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(LOGIN_RUL)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(map)))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andReturn();
+
+        //then
+        assertThat(result.getResponse().getHeader(accessHeader)).isNull();
+        assertThat(result.getResponse().getHeader(refreshHeader)).isNull();
 
     }
 
@@ -146,13 +174,21 @@ public class LoginTest {
     @Test
     public void login_fail_json() throws Exception {
         //given
-        Map<String, String> map = getUsernamePasswordMap(USERNAME, PASSWORD);
+        Map<String, String> map = new HashMap<>();
+        map.put("username", USERNAME);
+        map.put("password", PASSWORD);
 
-        //when, then
-        MvcResult result = perform(LOGIN_RUL, APPLICATION_FORM_URLENCODED, map)
+        //when
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(LOGIN_RUL)
+                        .contentType(APPLICATION_FORM_URLENCODED)
+                        .content(objectMapper.writeValueAsString(map)))
                 .andDo(print())
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andReturn();
+
+        //then
+        assertThat(result.getResponse().getContentAsString()).isEqualTo(LOGIN_FAIL_MESSAGE);
 
     }
 

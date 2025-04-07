@@ -289,7 +289,7 @@ public class MemberControllerTest {
                         .header(accessHeader, BEARER+accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatePassword))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
 
         //then
         Member member = memberRepository.findByUsername(username).orElseThrow(() -> new Exception("회원이 없습니다."));
@@ -410,7 +410,7 @@ public class MemberControllerTest {
                         get("/member/2211")
                                 .characterEncoding(StandardCharsets.UTF_8)
                                 .header(accessHeader, BEARER + accessToken))
-                .andExpect(status().isOk()).andReturn();
+                .andExpect(status().isNotFound()).andReturn();
 
 
         //then

@@ -65,6 +65,7 @@ public class JwtFilterAuthenticationTest {
     private static  String PASSWORD = "123456789";
 
     private static String LOGIN_RUL = "/login";
+    private static String LOGIN_FAIL_MESSAGE = "fail";
 
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
     private static final String BEARER = "Bearer ";
@@ -289,8 +290,10 @@ public class JwtFilterAuthenticationTest {
         MvcResult result = mockMvc.perform(post(LOGIN_RUL)
                 .header(refreshToken, BEARER + refreshToken)
                 .header(accessHeader, BEARER + accessToken))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andReturn();
+
+        assertThat(result.getResponse().getContentAsString()).isEqualTo(LOGIN_FAIL_MESSAGE);
 
     }
 
