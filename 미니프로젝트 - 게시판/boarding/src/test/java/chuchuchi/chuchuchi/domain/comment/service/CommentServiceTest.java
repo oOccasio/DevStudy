@@ -1,15 +1,38 @@
 package chuchuchi.chuchuchi.domain.comment.service;
 
 import chuchuchi.chuchuchi.domain.comment.Comment;
+import chuchuchi.chuchuchi.domain.comment.dto.CommentSaveDto;
+import chuchuchi.chuchuchi.domain.comment.dto.CommentUpdateDto;
+import chuchuchi.chuchuchi.domain.comment.exception.CommentException;
+import chuchuchi.chuchuchi.domain.comment.exception.CommentExceptionType;
 import chuchuchi.chuchuchi.domain.comment.repository.CommentRepository;
+import chuchuchi.chuchuchi.domain.member.Role;
+import chuchuchi.chuchuchi.domain.member.dto.MemberSignUpDto;
+import chuchuchi.chuchuchi.domain.member.exception.MemberException;
+import chuchuchi.chuchuchi.domain.member.exception.MemberExceptionType;
+import chuchuchi.chuchuchi.domain.member.repository.MemberRepository;
+import chuchuchi.chuchuchi.domain.member.service.MemberService;
+import chuchuchi.chuchuchi.domain.post.Post;
+import chuchuchi.chuchuchi.domain.post.dto.PostSaveDto;
+import chuchuchi.chuchuchi.domain.post.exception.PostException;
+import chuchuchi.chuchuchi.domain.post.exception.PostExceptionType;
+import chuchuchi.chuchuchi.domain.post.repository.PostRepository;
+import chuchuchi.chuchuchi.global.exception.BaseExceptionType;
+import chuchuchi.chuchuchi.global.util.security.SecurityUtil;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -26,7 +49,54 @@ public class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Autowired
+    private PostRepository postRepository;
+
+    @Autowired
+    MemberService memberService;
+
+    @Autowired
     EntityManager em;
+    @Autowired
+    private MemberRepository memberRepository;
+
+
+    @BeforeEach
+    public void signUpAndSetAuthentication() throws Exception{
+        memberService.signUp(new MemberSignUpDto("USERNAME", "PASSWORD@123", "name", "nickname", 22));
+        SecurityContext emptyContext = SecurityContextHolder.createEmptyContext();
+        emptyContext.setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        User.builder()
+                                .username("USERNAME")
+                                .password("PASSWORD@123")
+                                .roles(Role.USER.toString())
+                                .build(),
+                        null)
+        );
+
+        SecurityContextHolder.setContext(emptyContext);
+        clear();
+
+    }
+
+    private void anotherSignUpAndSetAuthentication() throws Exception{
+        memberService.signUp(new MemberSignUpDto("USERNAME1", "PASSWORD123@@", "name", "nickname", 22));
+        SecurityContext emptyContext = SecurityContextHolder.createEmptyContext();
+        emptyContext.setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        User.builder()
+                                .username("USERNAME1")
+                                .password("PASSWORD123@@")
+                                .roles(Role.USER.toString())
+                                .build(),
+                        null)
+        );
+
+        SecurityContextHolder.setContext(emptyContext);
+        clear();
+    }
+
+
 
     private void clear(){
         em.flush();
@@ -34,7 +104,13 @@ public class CommentServiceTest {
     }
 
     private Long saveComment(){
+
+
         Comment comment = Comment.builder().content("댓글").build();
+
+        comment.confirmWriter(memberRepository.findByUsername(SecurityUtil.getLoginUsername())
+                .orElseThrow(() -> new MemberException(MemberExceptionType.NOT_FOUND_MEMBER)));
+
 
         Long id = commentRepository.save(comment).getId();
 
@@ -44,8 +120,14 @@ public class CommentServiceTest {
     }
 
     private Long saveReComment (Long parentId){
-        Comment parent = commentRepository.findById(parentId).orElse(null);
-        Comment comment = Comment.builder().content("댓글").parent(parent).build();
+
+        Comment parent = commentRepository.findById(parentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT));
+
+        Comment comment = Comment.builder().content("대댓글").parent(parent).build();
+
+        comment.confirmWriter(memberRepository.findByUsername(SecurityUtil.getLoginUsername())
+                .orElseThrow(() -> new MemberException(MemberExceptionType.NOT_FOUND_MEMBER)));
 
         Long id = commentRepository.save(comment).getId();
         clear();
@@ -53,6 +135,142 @@ public class CommentServiceTest {
         return id;
     }
 
+    private Long savePost(){
+        String title = "제목";
+        String content = "내용";
+        PostSaveDto postSaveDto = new PostSaveDto(title, content, Optional.empty());
+
+        Post save = postRepository.save(postSaveDto.toEntity());
+        clear();
+        return save.getId();
+    }
+
+    @Test
+    public void commentSaveSuccess() throws Exception{
+        //given
+        Long postId = savePost();
+        CommentSaveDto commentSaveDto = new CommentSaveDto("댓글");
+
+        //when
+
+        commentService.save(postId, commentSaveDto);
+        clear();
+
+        //then
+        List<Comment> resultList = em.createQuery("select c from Comment c order by c.createdDate desc ", Comment.class)
+                .getResultList();
+        assertThat(resultList.size()).isEqualTo(1);
+
+    }
+
+    @Test
+    public void reCommentSaveSuccess() throws Exception{
+        //given
+        Long postId = savePost();
+        clear();
+        Long parentId = saveComment();
+        clear();
+        CommentSaveDto commentSaveDto = new CommentSaveDto("대댓글");
+
+        //when
+        commentService.saveReComment(postId, parentId, commentSaveDto);
+        clear();
+
+        //then
+        List<Comment> resultList = em.createQuery("select c from Comment c order by c.createdDate desc", Comment.class)
+                .getResultList();
+        assertThat(resultList.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void commentSaveFailForNoPost() throws Exception{
+        //given
+        Long postId = savePost();
+        CommentSaveDto commentSaveDto = new CommentSaveDto("댓글");
+
+        //when,then
+        assertThat(assertThrows(PostException.class, () -> commentService.save(postId + 1, commentSaveDto))
+                .getBaseExceptionType()).isEqualTo(PostExceptionType.POST_NOT_FOUND);
+
+    }
+
+    @Test
+    public void reCommentSaveFailForNoPost() throws Exception{
+        //given
+        Long postId = savePost();
+        Long parentId = saveComment();
+        CommentSaveDto commentSaveDto = new CommentSaveDto("댓글");
+
+        //when, then
+        assertThat(assertThrows(PostException.class,
+                () -> commentService.saveReComment(postId + 1, parentId, commentSaveDto))
+                .getBaseExceptionType()).isEqualTo(PostExceptionType.POST_NOT_FOUND);
+
+
+    }
+
+    @Test
+    public void reCommentSaveFailForNoComment() throws Exception{
+        //given
+        Long postId = savePost();
+        Long parentId = saveComment();
+        CommentSaveDto commentSaveDto = new CommentSaveDto("댓글");
+
+        //when, then
+        assertThat(assertThrows(CommentException.class,
+                () -> commentService.saveReComment(postId, parentId + 1, commentSaveDto))
+                .getBaseExceptionType()).isEqualTo(CommentExceptionType.NOT_FOUND_COMMENT);
+
+    }
+
+    @Test
+    public void updateCommentSuccess() throws Exception{
+        //given
+        Long commentId = saveComment();
+        clear();
+
+        //when
+        commentService.update(commentId, new CommentUpdateDto(Optional.of("댓글수정")));
+        clear();
+
+        //then
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT));
+
+        assertThat(comment.getContent()).isEqualTo("댓글수정");
+    }
+
+    @Test
+    public void updateCommentFailForNoAuthority() throws Exception{
+        //given
+       Long commentId = saveComment();
+        clear();
+
+        anotherSignUpAndSetAuthentication();
+
+        //when, then
+        BaseExceptionType type = assertThrows(CommentException.class,
+                () -> commentService.update(commentId, new
+                        CommentUpdateDto(Optional.of("댓글수정")))).getBaseExceptionType();
+
+        assertThat(type).isEqualTo(CommentExceptionType.NOT_AUTHORITY_UPDATE_COMMENT);
+
+    }
+
+    @Test
+    public void deleteCommentFailForNoAuthority() throws Exception{
+        //given
+        Long postId = savePost();
+        Long commentId = saveComment();
+        clear();
+
+        anotherSignUpAndSetAuthentication();
+
+        BaseExceptionType type = assertThrows(CommentException.class, () ->
+                commentService.remove(commentId)).getBaseExceptionType();
+
+        assertThat(type).isEqualTo(CommentExceptionType.NOT_AUTHORITY_DELETE_COMMENT);
+    }
 
     //댓글 삭제 경우
     //대댓글 남아 있음
@@ -67,14 +285,17 @@ public class CommentServiceTest {
         saveReComment(commentId);
         saveReComment(commentId);
 
-        Assertions.assertThat(commentService.findById(commentId).getChildList().size()).isEqualTo(4);
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))
+                .getChildList().size()).isEqualTo(4);
 
         //when
         commentService.remove(commentId);
         clear();
 
         //then
-        Comment findComment = commentRepository.findById(commentId).get();
+        Comment findComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT));
         assertThat(findComment).isNotNull();
         assertThat(findComment.isRemoved()).isTrue();
         assertThat(findComment.getChildList().size()).isEqualTo(4);
@@ -84,7 +305,7 @@ public class CommentServiceTest {
 
     //댓글 삭제경우
     //대댓글이 없음
-    //DB에서 바로삭제
+    //DB 에서 바로삭제
     @Test
     public void RemoveCommentNoReComment() throws Exception{
         //given
@@ -95,9 +316,10 @@ public class CommentServiceTest {
         clear();
 
         //then
-        Assertions.assertThat(commentService.findAll().size()).isSameAs(0);
-        assertThat(assertThrows(EntityNotFoundException.class, () -> commentService.findById(commentId)).getMessage())
-                .isEqualTo("댓글이 없습니다.");
+        Assertions.assertThat(commentRepository.findAll().size()).isSameAs(0);
+        assertThat(assertThrows(CommentException.class, () -> commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).getBaseExceptionType())
+                .isEqualTo(CommentExceptionType.NOT_FOUND_COMMENT);
 
     }
 
@@ -114,7 +336,9 @@ public class CommentServiceTest {
         Long reCommentId3 = saveReComment(commentId);
         Long reCommentId4 = saveReComment(commentId);
 
-        Assertions.assertThat(commentService.findById(commentId).getChildList().size()).isEqualTo(4);
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))
+                .getChildList().size()).isEqualTo(4);
 
         commentService.remove(reCommentId1);
         clear();
@@ -128,19 +352,24 @@ public class CommentServiceTest {
         commentService.remove(reCommentId4);
         clear();
 
-        Assertions.assertThat(commentService.findById(reCommentId1).isRemoved()).isTrue();
-        Assertions.assertThat(commentService.findById(reCommentId2).isRemoved()).isTrue();
-        Assertions.assertThat(commentService.findById(reCommentId3).isRemoved()).isTrue();
-        Assertions.assertThat(commentService.findById(reCommentId4).isRemoved()).isTrue();
+        Assertions.assertThat(commentRepository.findById(reCommentId1)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
+        Assertions.assertThat(commentRepository.findById(reCommentId2)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
+        Assertions.assertThat(commentRepository.findById(reCommentId3)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
+        Assertions.assertThat(commentRepository.findById(reCommentId4)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
         clear();
 
         commentService.remove(commentId);
         clear();
 
         LongStream.rangeClosed(commentId, reCommentId4).forEach(id ->
-                assertThat(assertThrows(EntityNotFoundException.class,
-                        () -> commentService.findById(id)).getMessage())
-                        .isEqualTo("댓글이 없습니다."));
+                assertThat(assertThrows(CommentException.class,
+                        () -> commentRepository.findById(id)
+                                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)))
+                        .getBaseExceptionType()).isEqualTo(CommentExceptionType.NOT_FOUND_COMMENT));
 
 
     }
@@ -157,10 +386,14 @@ public class CommentServiceTest {
         commentService.remove(ReCommentId);
         clear();
 
-        Assertions.assertThat(commentService.findById(commentId)).isNotNull();
-        Assertions.assertThat(commentService.findById(ReCommentId)).isNotNull();
-        Assertions.assertThat(commentService.findById(commentId).isRemoved()).isFalse();
-        Assertions.assertThat(commentService.findById(ReCommentId).isRemoved()).isTrue();
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
+        Assertions.assertThat(commentRepository.findById(ReCommentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isFalse();
+        Assertions.assertThat(commentRepository.findById(ReCommentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
     }
 
     //대댓글 삭제하는 경우
@@ -183,8 +416,12 @@ public class CommentServiceTest {
         commentService.remove(commentId);
         clear();
 
-        Assertions.assertThat(commentService.findById(commentId)).isNotNull();
-        Assertions.assertThat(commentService.findById(commentId).getChildList().size()).isEqualTo(3);
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
+
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))
+                .getChildList().size()).isEqualTo(3);
 
         //when
         commentService.remove(ReCommentId1);
@@ -192,8 +429,9 @@ public class CommentServiceTest {
 
         //then
         LongStream.rangeClosed(commentId, ReCommentId3).forEach(id ->
-                assertThat(assertThrows(EntityNotFoundException.class, () -> commentService.findById(id))
-                        .getMessage()).isEqualTo("댓글이 없습니다."));
+                assertThat(assertThrows(CommentException.class, () -> commentRepository.findById(id)
+                        .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)))
+                        .getBaseExceptionType()).isEqualTo(CommentExceptionType.NOT_FOUND_COMMENT));
 
     }
 
@@ -211,20 +449,32 @@ public class CommentServiceTest {
         commentService.remove(reCommentId3);
         clear();
 
-        Assertions.assertThat(commentService.findById(commentId)).isNotNull();
-        Assertions.assertThat(commentService.findById(commentId).getChildList().size()).isEqualTo(3);
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))
+                .getChildList().size()).isEqualTo(3);
 
         //when
         commentService.remove(reCommentId2);
-        Assertions.assertThat(commentService.findById(commentId)).isNotNull();
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
 
         //then
-        Assertions.assertThat(commentService.findById(reCommentId2)).isNotNull();
-        Assertions.assertThat(commentService.findById(reCommentId2).isRemoved()).isTrue();
-        Assertions.assertThat(commentService.findById(reCommentId3).getId()).isNotNull();
-        Assertions.assertThat(commentService.findById(reCommentId1).getId()).isNotNull();
-        Assertions.assertThat(commentService.findById(commentId).getId()).isNotNull();
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
 
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).isRemoved()).isTrue();
+
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT)).getId()).isNotNull();
+
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
+
+        Assertions.assertThat(commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentExceptionType.NOT_FOUND_COMMENT))).isNotNull();
 
     }
 
