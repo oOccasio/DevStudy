@@ -5,7 +5,7 @@ import chuchuchi.chuchuchi.global.exception.BaseExceptionType;
 
 public class CommentException extends BaseException {
 
-    private BaseExceptionType baseExceptionType;
+    private final BaseExceptionType baseExceptionType;
 
     public CommentException(BaseExceptionType baseExceptionType) {
         this.baseExceptionType = baseExceptionType;
