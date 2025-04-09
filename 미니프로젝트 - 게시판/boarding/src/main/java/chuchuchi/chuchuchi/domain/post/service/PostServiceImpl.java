@@ -91,7 +91,9 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostInfoDto getPostInfo(Long id) {
-        return null;
+
+        return new PostInfoDto(postRepository.findWithWriterById(id)
+                .orElseThrow(() -> new PostException(PostExceptionType.POST_NOT_FOUND)));
     }
 
     @Override
