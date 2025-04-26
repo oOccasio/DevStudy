@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static java.lang.String.format;
-
 @RequiredArgsConstructor
 @Component
 public class Init {
@@ -94,6 +92,10 @@ public class Init {
                 commentRepository.save(recomment);
             }
         }
+    }
+
+    public boolean hasNoMember(){
+        return memberRepository.count() == 0;
     }
 
 }
